@@ -69,9 +69,10 @@ function dealWithError({response, error}) {
  * Build a URL with all required parameters
  */
 function getParameters({type, source, geoColumn, columns, schema}) {
-  const encodedClient = encodeParameter('client', 'deck-gl-carto');
-  const encodedSchema = encodeParameter('schema', Boolean(schema));
-  const parameters = [encodedClient, encodedSchema];
+  const parameters = [encodeParameter('client', 'deck-gl-carto')];
+  if (schema) {
+    parameters.push(encodeParameter('schema', true));
+  }
 
   const sourceName = type === MAP_TYPES.QUERY ? 'q' : 'name';
   parameters.push(encodeParameter(sourceName, source));
@@ -125,6 +126,17 @@ function getUrlFromMetadata(metadata, format) {
   return null;
 }
 
+function checkGetLayerDataParameters({type, source, connection, localCreds}) {
+  log.assert(connection, 'Must define connection');
+  log.assert(type, 'Must define a type');
+  log.assert(source, 'Must define a source');
+
+  log.assert(localCreds.apiVersion === API_VERSIONS.V3, 'Method only available for v3');
+  log.assert(localCreds.apiBaseUrl, 'Must define apiBaseUrl');
+  log.assert(localCreds.accessToken, 'Must define an accessToken');
+  log.assert(localCreds.mapsUrl, 'mapsUrl cannot be undefined');
+}
+
 export async function getLayerData({
   type,
   source,
@@ -136,15 +148,7 @@ export async function getLayerData({
   schema
 }) {
   const localCreds = {...getDefaultCredentials(), ...credentials};
-
-  log.assert(connection, 'Must define connection');
-  log.assert(type, 'Must define a type');
-  log.assert(source, 'Must define a source');
-
-  log.assert(localCreds.apiVersion === API_VERSIONS.V3, 'Method only available for v3');
-  log.assert(localCreds.apiBaseUrl, 'Must define apiBaseUrl');
-  log.assert(localCreds.accessToken, 'Must define an accessToken');
-  log.assert(localCreds.mapsUrl, 'mapsUrl cannot be undefined');
+  checkGetLayerDataParameters({type, source, connection, localCreds});
 
   if (!localCreds.mapsUrl) {
     localCreds.mapsUrl = buildMapsUrlFromBase(localCreds.apiBaseUrl);
